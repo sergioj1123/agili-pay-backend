@@ -1,0 +1,90 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Recurrence {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+enum ContractStatus {
+  ACTIVE
+  PAUSED
+  FINISHED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  name         String
+  businessName String?
+  clients      Client[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+}
+
+model Client {
+  id        String     @id @default(uuid())
+  name      String
+  email     String
+  taxId     String?    
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  contracts Contract[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+}
+
+model Contract {
+  id          String         @id @default(uuid())
+  title       String
+  description String?
+  value       Decimal        @db.Decimal(10, 2)
+  recurrence  Recurrence
+  status      ContractStatus @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime?
+  
+  clientId    String
+  client      Client         @relation(fields: [clientId], references: [id])
+  invoices    Invoice[]
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
+}
+
+model Invoice {
+  id          String        @id @default(uuid())
+  amount      Decimal       @db.Decimal(10, 2)
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      InvoiceStatus @default(PENDING)
+  
+  contractId  String
+  contract    Contract      @relation(fields: [contractId], references: [id])
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+}
